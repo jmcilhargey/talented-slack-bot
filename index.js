@@ -8,9 +8,8 @@ var HTMLify = require("./htmlify");
 
 var stocks = require("./apis/stocks");
 var news = require("./apis/news");
-var traffic = require("./apis/traffic");
-var geo = require("./apis/geo");
-var uber = require("./apis/uber");
+var locations = require("./apis/locations");
+var rides = require("./apis/rides");
 
 slackConnect(process.env.BOT_KEY).then(function(data) {
 
@@ -28,11 +27,11 @@ slackConnect(process.env.BOT_KEY).then(function(data) {
 
 		var text = "Hello! :bowtie: I'm a multi-talented bot. I know these commands:\n"
 		text += "`setstocks [ticker symbols]` to save a list of stocks\n";
-		text += "`getstocks` to display the current price for your stocks\n";
+		text += "`getstocks` to display the current stats for saved stocks\n";
 		text += "`getnews` to get a list of the top 10 NY Times articles\n";
-		text += "`setroute [address1] [address2]` to set your start and end address\n";
+		text += "`setaddress [address1] [address2]` to set a start and end address\n";
 		text += "`getroute` to see Google's estimated travel time and distance\n";
-		text += "`getride` to see Uber's esimated rate and time for an UberX";
+		text += "`getride` to see Uber's esimated rates and times";
 
 		if (messageText === "help") {
 
@@ -106,9 +105,9 @@ slackConnect(process.env.BOT_KEY).then(function(data) {
 			});
 		}
 
-		if (messageText.indexOf("setroute") >= 0) {
+		if (messageText.indexOf("setaddress") >= 0) {
 
-			traffic.setRoute(messageText);
+			locations.setRoute(messageText);
 
 			ws.send(JSON.stringify({
 			    "id": id,
@@ -121,7 +120,7 @@ slackConnect(process.env.BOT_KEY).then(function(data) {
 
 		if (messageText === "getroute") {
 
-			traffic.getRoute().then(function(data) {
+			locations.getRoute().then(function(data) {
 
 				var text = "Your destination is *" + data.rows[0].elements[0].distance.text + "* away.\n";
 				text += "Estimated travel time is *" + data.rows[0].elements[0].duration.text + "*.";
@@ -142,19 +141,35 @@ slackConnect(process.env.BOT_KEY).then(function(data) {
 
 		if (messageText === "getride") {
 
-			traffic.getRide().then(function(data) {
+			var text1 = "";
+			var text2 = "";
 
-				var text = "";
+			locations.getGeo().then(function(geoData) {
 
-				ws.send(JSON.stringify({
-				    "id": id,
-				    "type": "message",
-				    "channel": "C2750K0GY",
-				    "mrkdwn": true,
-				    "text": text
-				}));
-				id += 1;
+				rides.getTimes(geoData).then(function(timeData){
+					
+					text1 += "An uberPool is *" + timeData.times[0].estimate / 60 + "m* away ";
+					text2 += "An uberX is *"+ timeData.times[1].estimate / 60 + "m* away ";
+					
+					rides.getPrice(geoData).then(function(priceData){
 
+						text1 += "and would cost *" + priceData.prices[0].estimate + "*\n";
+						text2 += "and would cost *" + priceData.prices[1].estimate + "*";
+
+						ws.send(JSON.stringify({
+						    "id": id,
+						    "type": "message",
+						    "channel": "C2750K0GY",
+						    "mrkdwn": true,
+						    "text": text1 + text2
+						}));
+						id += 1;
+					}, function(error){
+						console.log(error)
+					});
+				}, function(error) {
+					console.log(error)
+				});
 			}, function(error) {
 				console.log(error);
 			});

@@ -41,7 +41,7 @@ module.exports = {
 				});
 
 				response.on("end", function() {
-					console.log(string);
+
 					try {
 						resolve(JSON.parse(string));
 					} catch (error) {
@@ -56,8 +56,59 @@ module.exports = {
 		});
 		return promise;
 	},
-	getRide: function() {
+	getGeo: function() {
 
+		var promise = new Promise(function(resolve, reject) {
+
+			var geoCoordinates = [];
+			var completedRequests = 0;	
+
+			for (var i = 0; i < addresses.length; i++) {
+
+				var googOptions = {
+					address: addresses[i],
+					components: "country:US",
+					key: process.env.GOOG_GEO_KEY
+				}
+
+				var httpsOptions = {
+					hostname: "maps.googleapis.com",
+					port: 443,
+					path: "/maps/api/geocode/json?" + qs(googOptions),
+					method: "GET"
+				};
+
+				var request = https.request(httpsOptions, function(response) {
+
+					var string = "";
+
+					response.setEncoding("utf-8");
+					
+					response.on("data", function(chunk) {
+						string += chunk;
+					});
+
+					response.on("end", function() {
+						
+						try {
+							geoCoordinates.push(JSON.parse(string).results[0].geometry.location);
+
+							if (++completedRequests === addresses.length) {
+								resolve(geoCoordinates);
+							}
+						} catch (error) {
+							reject(error);
+						}
+					});
+				});
+				request.on("error", function(error) {
+					reject(error)
+				});
+				request.end();
+			}
+			
+		});
+		return promise;
 	},
 	setRoute: function(addressString) {
 		
