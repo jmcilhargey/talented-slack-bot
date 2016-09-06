@@ -5,6 +5,8 @@
 var https = require("https");
 var qs = require("../querystring");
 
+require("../env")
+
 var addresses = [];
 
 module.exports = {
@@ -18,7 +20,8 @@ module.exports = {
 			language: "english",
 			units: "imperial",
 			departure_time: "now",
-			traffic_model: "best_guess"
+			traffic_model: "best_guess",
+			key: process.env.GOOG_KEY
 		}
 
 		var promise = new Promise(function(resolve, reject) {
@@ -35,13 +38,13 @@ module.exports = {
 				var string = "";
 
 				response.setEncoding("utf-8");
-				
+
 				response.on("data", function(chunk) {
 					string += chunk;
 				});
 
 				response.on("end", function() {
-
+					console.log(string);
 					try {
 						resolve(JSON.parse(string));
 					} catch (error) {
@@ -61,14 +64,14 @@ module.exports = {
 		var promise = new Promise(function(resolve, reject) {
 
 			var geoCoordinates = [];
-			var completedRequests = 0;	
+			var completedRequests = 0;
 
 			for (var i = 0; i < addresses.length; i++) {
 
 				var googOptions = {
 					address: addresses[i],
 					components: "country:US",
-					key: process.env.GOOG_GEO_KEY
+					key: process.env.GOOG_KEY
 				}
 
 				var httpsOptions = {
@@ -83,13 +86,13 @@ module.exports = {
 					var string = "";
 
 					response.setEncoding("utf-8");
-					
+
 					response.on("data", function(chunk) {
 						string += chunk;
 					});
 
 					response.on("end", function() {
-						
+
 						try {
 							geoCoordinates.push(JSON.parse(string).results[0].geometry.location);
 
@@ -106,12 +109,12 @@ module.exports = {
 				});
 				request.end();
 			}
-			
+
 		});
 		return promise;
 	},
-	setRoute: function(addressString) {
-		
+	setAddress: function(addressString) {
+
 		addresses = [];
 
 		var regex = new RegExp(/\[(.*?)\]/g);

@@ -23,35 +23,41 @@ slackConnect(process.env.BOT_KEY).then(function(data) {
 
 	ws.on("message", function(message) {
 
-		var messageText = JSON.parse(message).text || "";
+		try {
+			var messageJSON = JSON.parse(message);	
+		} catch(error) {
+			console.log(error);
+		}
 
-		var text = "Hello! :bowtie: I'm a multi-talented bot. I know these commands:\n"
-		text += "`setstocks [ticker symbols]` to save a list of stocks\n";
-		text += "`getstocks` to display the current stats for saved stocks\n";
-		text += "`getnews` to get a list of the top 10 NY Times articles\n";
-		text += "`setaddress [address1] [address2]` to set a start and end address\n";
-		text += "`getroute` to see Google's estimated travel time and distance\n";
-		text += "`getride` to see Uber's esimated rates and times";
+		var messageText = messageJSON.text || "";
 
 		if (messageText === "help") {
+
+				var text = "Hello! :bowtie: I'm a multi-talented bot. I know these commands:\n"
+				text += "`setstocks [ticker symbols]` to save a list of stocks\n";
+				text += "`getstocks` to display the current stats for saved stocks\n";
+				text += "`getnews` to get a list of the top 10 NY Times articles\n";
+				text += "`setaddress [address1] [address2]` to set a start and end address\n";
+				text += "`getroute` to see Google's estimated travel time and distance\n";
+				text += "`getride` to see Uber's esimated rates and times";
 
 			ws.send(JSON.stringify({
 			    "id": id,
 			    "type": "message",
-			    "channel": "C2750K0GY",
+			    "channel": messageJSON.channel,
 			    "text": text
 			}));
 			id += 1;
 		}
 
-		if (messageText.indexOf("setstocks") >= 0) {
+		if (messageText.includes("setstocks")) {
 
 			stocks.set(messageText);
 
 			ws.send(JSON.stringify({
 				    "id": id,
 				    "type": "message",
-				    "channel": "C2750K0GY",
+				    "channel": messageJSON.channel,
 				    "text": "Thanks! I've recorded your stock list."
 			}));
 			id += 1;
@@ -70,7 +76,7 @@ slackConnect(process.env.BOT_KEY).then(function(data) {
 				ws.send(JSON.stringify({
 				    "id": id,
 				    "type": "message",
-				    "channel": "C2750K0GY",
+				    "channel": messageJSON.channel,
 				    "mrkdwn": true,
 				    "text": text
 				}));
@@ -94,7 +100,7 @@ slackConnect(process.env.BOT_KEY).then(function(data) {
 				ws.send(JSON.stringify({
 				    "id": id,
 				    "type": "message",
-				    "channel": "C2750K0GY",
+				    "channel": messageJSON.channel,
 				    "mrkdwn": true,
 				    "text": text
 				}));
@@ -105,14 +111,14 @@ slackConnect(process.env.BOT_KEY).then(function(data) {
 			});
 		}
 
-		if (messageText.indexOf("setaddress") >= 0) {
+		if (messageText.includes("setaddress")) {
 
-			locations.setRoute(messageText);
+			locations.setAddress(messageText);
 
 			ws.send(JSON.stringify({
 			    "id": id,
 			    "type": "message",
-			    "channel": "C2750K0GY",
+			    "channel": messageJSON.channel,
 			    "text": "Thanks! I've set your start and end address."
 			}));
 			id += 1;
@@ -128,7 +134,7 @@ slackConnect(process.env.BOT_KEY).then(function(data) {
 				ws.send(JSON.stringify({
 				    "id": id,
 				    "type": "message",
-				    "channel": "C2750K0GY",
+				    "channel": messageJSON.channel,
 				    "mrkdwn": true,
 				    "text": text
 				}));
@@ -159,7 +165,7 @@ slackConnect(process.env.BOT_KEY).then(function(data) {
 						ws.send(JSON.stringify({
 						    "id": id,
 						    "type": "message",
-						    "channel": "C2750K0GY",
+						    "channel": messageJSON.channel,
 						    "mrkdwn": true,
 						    "text": text1 + text2
 						}));
